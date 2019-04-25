@@ -1,9 +1,13 @@
 var Assignment = require('../../models/assignments/AssignmentSchema.js');
+var RequestAssignment = require('../../models/requests/RequestAssignmentSchema.js');
 var Field = require('../../models/fields/FieldSchema.js');
+var ElectiveField = require('../../models/fields/ElectiveFieldSchema.js');
 var FieldGroup = require('../../models/fields/FieldGroupSchema.js');
 var Student = require('../../models/users/StudentSchema.js');
 var Rotation = require('../../models/rotations/RotationSchema.js');
 var Request = require('../../models/requests/RequestSchema.js');
+var SwitchRequest = require('../../models/requests/SwitchRequestSchema');
+var MedAdmin = require('../../models/users/MedAdminSchema.js');
 
 var RotationType = {
   SINGLE: "Single",
@@ -77,6 +81,40 @@ function listAssignments(req, res) {
   })
 }
 
+function listCustomAssignments(req ,res) {
+  Assignment.find({
+    isCustom: true
+  })
+  .populate('student')
+  .populate({
+    path: 'rotation',
+    populate: [
+      { path: 'schedule' },
+      { path: 'field' },
+      { 
+        path: 'fieldGroup', 
+        populate: {
+          path: 'fields'
+        } 
+      },
+      { path: 'group' }
+    ]
+  })
+  .populate('group')
+  .populate('admin')
+  .populate('field')
+  .exec(function (err, assignments) {
+    if (err) {
+      res.status(422).json({
+        message: err
+      });
+    }
+    else{
+      res.status(200).send(assignments);
+    }
+  })
+}
+
 function listAssignmentsByStudent(req ,res) {
   Assignment.find({
     student : req.params.id
@@ -92,7 +130,8 @@ function listAssignmentsByStudent(req ,res) {
         populate: {
           path: 'fields'
         } 
-      }
+      },
+      { path: 'group' }
     ]
   })
   .populate('group')
@@ -132,14 +171,15 @@ function listAssignmentsByRotation(req ,res) {
   })
 }
 
-function createNewAssignment(group, student, rotation, field) {
+function createNewAssignment(groupId, studentId, rotationId, fieldId, isCustom = false) {
   return new Promise(function(resolve, reject) {
     console.log("Creating a new doc...");
     new Assignment({
-      student : student.id,
-      rotation : rotation.id,
-      group : group,
-      field : field
+      student : studentId,
+      rotation : rotationId,
+      group : groupId,
+      field : fieldId,
+      isCustom: isCustom
     })
     .save().then(async assign => {
       console.log("Creating a new doc finished executing...");
@@ -151,80 +191,125 @@ function createNewAssignment(group, student, rotation, field) {
   })
 }
 
-async function switchAssignments(req, res) {
-  /*
-    Expected Payload
-    {
-      request : //Id of request
-      remarks : 
-    }
-  */
-  // Deactivate previous assignments of the student from the old rotation
-  // Create new assignments from the Fields of the New Rotation
-  // Approve the request
-
+async function approveSwitchRequest(req, res) {
   var request = await Request.findById(req.body.request);
-  var student = await Student.findById(request.student);
-  
-  if(student.assignments.length != 0) {
-    Assignment.find({
-      student : student._id,
-      rotation : request.oldRotation
-    })
-    .then(assignments => {
-      assignments.forEach(assign => {
-        assign.isActive = false;
-        assign.save();
-      })
+
+  if(request == null) {
+    return res.status(422).json({
+      message : "Request does not exist"
     })
   }
 
-  var newRotation = await Rotation.findById(request.newRotation);
-  
-  switch(newRotation.rotationType) {
-    case RotationType.SINGLE :
-      createNewAssignment(newRotation.group, student, newRotation, newRotation.field)
-      .then(assign => {
-        student.assignments.push(assign);
-        student.save().then(() => {
-          res.status(200).send(student);
-        })
-        .catch(err => {
-          console.log(err);
-          res.status(422).json({
-            message: err
-          });
-        })
-      })
-      break;
-    default :
-      var counter = 0;
-      var fieldGroup = FieldGroup.findById(newRotation.fieldGroup);
-      fieldGroup.fields.forEach(field => {
-        createNewAssignment(newRotation.group, student, newRotation, field)
-        .then(assign => {
-          counter++;
-          student.assignments.push(assign);
-          if(counter == fieldGroup.fields.length) {
-            student.save().then(() => {
-              var request = Request.findById(req.body.request);
-              request.isApproved = true;
-              request.remarks = req.body.remarks;
-              request.save().then(() => {
-                res.status(200).send(student);
-              })
-            })
-            .catch(err => {
-              console.log("NOT HERE???")
-              res.status(422).json({
-                message: err
-              });
-          })
-        }
-      })
+  request.remarks = req.body.remarks;
+  request.isApproved = true;
+  request.isPending = false;
+  request.save();
+
+  request.oldAssignments.forEach(async oldAssign => {
+    var tempAssign = await Assignment.findById(oldAssign);
+    var tempRot = await Rotation.findById(tempAssign.rotation);
+
+    tempRot.studentCount--;
+    tempRot.save();
+
+    if(tempAssign == null) {
+      return res.status(422).json({
+        message: err
+      });
+    }
+
+    tempAssign.isActive = false;
+
+    tempAssign.save();
+   
+  });
+
+  var counter = 0;
+  request.newAssignments.forEach(async assignment => {
+    var requestAssignment = await RequestAssignment.findById(assignment)
+    createNewAssignment(requestAssignment.group, requestAssignment.student, requestAssignment.rotation, requestAssignment.field)
+    .then(async newAssign => {
+      counter++;
+      var rotation = await Rotation.findById(requestAssignment.rotation);
+      rotation.studentCount++;
+      rotation.save();
+      if(counter == request.newAssignments.length) {
+        res.status(200).send({
+          message : "Successfully switched assignments"
+        });
+      }
     })
-    break;
-  }
+    .catch(err => {
+      console.log(err);
+      res.status(422).send({
+        message : err
+      });
+    })
+  })
+}
+
+async function listAssignmentsByUMA(req ,res) {
+  Assignment.find({
+    admin: req.params.id
+  })
+  .populate('student')
+  .populate({
+    path: 'rotation',
+    populate: [
+      { path: 'schedule' },
+      { path: 'field' },
+      { 
+        path: 'fieldGroup', 
+        populate: {
+          path: 'fields'
+        } 
+      }
+    ]
+  })
+  .populate('group')
+  .populate('admin')
+  .populate('field')
+  .exec(function (err, assignments) {
+    if (err) {
+      res.status(422).json({
+        message: err
+      });
+    }
+    else{
+      res.status(200).send(assignments);
+    }
+  })
+}
+
+function listElectivesByStudent(req, res) {
+  Assignment.find({
+    student : req.params.id
+  })
+  .populate('field')
+  .populate({
+    path: 'rotation',
+    populate: [
+      { path: 'schedule' },
+      { path: 'field' },
+      { 
+        path: 'fieldGroup', 
+        populate: {
+          path: 'fields'
+        } 
+      }
+    ]
+  })
+  .exec(function(err, electives) {
+    electives = electives.filter(assign => assign.field.fieldType == 'Elective');
+    if (err) {
+      res.status(422).json({
+        message: err
+      });
+    }
+    else{
+      res.status(200).send(electives);
+    }
+  })
 }
 
 async function listAssignmentsByFieldAdmin(req ,res) {
@@ -275,8 +360,11 @@ module.exports = {
   listAssignments : listAssignments,
   getAssignment : getAssignment,
   updateAssignment : updateAssignment,
+  listElectivesByStudent : listElectivesByStudent,
   listAssignmentsByStudent : listAssignmentsByStudent,
   listAssignmentsByRotation : listAssignmentsByRotation,
   listAssignmentsByFieldAdmin : listAssignmentsByFieldAdmin,
-  switchAssignments : switchAssignments
+  approveSwitchRequest : approveSwitchRequest,
+  listAssignmentsByUMA: listAssignmentsByUMA,
+  listCustomAssignments: listCustomAssignments
 } 

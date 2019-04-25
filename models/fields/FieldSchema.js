@@ -6,7 +6,7 @@ const baseOptions = {
 }
 
 var FieldSchema = new mongoose.Schema({
-  name: String,
+  name: { type : String, required : true, unique : true},
   admin : 
     {
       type: mongoose.Schema.Types.ObjectId,

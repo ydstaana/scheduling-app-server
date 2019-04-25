@@ -14,23 +14,27 @@ var RotationType = {
   SPECIAL : "Special"
 }
 
-function createRotation(req, res) {
+async function createRotation(req, res) {
+  var group = await Group.findById(req.body.group)
+
+  if(group == null) {
+    return res.status(422).json({
+      message : "Group does not exist"
+    })
+  }
+
+  req.body.studentCount = group.students.length;
+  
   switch(req.body.rotationType) {
     case RotationType.SINGLE :
       SingleRotation.create(req.body, async function (err, rotation) {
         if (err) {
           res.status(422).json({
-            message: err
+            message: err.message
           });
         }
         else {
           // Associate group to rotation
-          var group = await Group.findById(rotation.group)
-          if(group == null) {
-            return res.status(422).json({
-              message : "Group does not exist"
-            })
-          }
 
           group.rotations.push(rotation.id)
           group.save().then(() => {

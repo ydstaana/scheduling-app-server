@@ -3,18 +3,22 @@ var mongoose = require('mongoose');
 var AssignmentSchema = mongoose.Schema({
   student: {
     type: mongoose.Schema.Types.ObjectId,
+    required : true,
     ref: 'User'
   },
   rotation: {
     type: mongoose.Schema.Types.ObjectId,
+    required : true,
     ref: 'Rotation'
   },
   group: {
     type: mongoose.Schema.Types.ObjectId,
+    required : true,
     ref: 'Group'
   },
   field : {
     type: mongoose.Schema.Types.ObjectId,
+    required : true,
     ref: 'Field'
   },
   grade : Number,
@@ -23,6 +27,7 @@ var AssignmentSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  message : String,
   isCompleted: { type : Boolean, default : false },
   isCustom: { type : Boolean, default : false },
   isApproved: { type : Boolean, default : false },

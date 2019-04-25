@@ -23,6 +23,7 @@ router.get('/users/students/:id', userController.getStudent);
 router.put('/users/students/:id', userController.updateStudent);
 router.put('/users/profile/update/:id', userController.updateUserProfile);
 router.get('/users/:id', userController.getUser);
+router.post('/users/reset', userController.resetPassword);
 
 router.put('/users/:id', userController.updateUser);
 
@@ -60,17 +61,25 @@ router.post('/rotations/lookup', rotationController.rotationLookup);
 //Assignments
 router.get('/assignments', assignmentController.listAssignments);
 router.post('/assignments', assignmentController.createAssignment);
+router.get('/assignments/custom', assignmentController.listCustomAssignments);
 router.put('/assignments/:id', assignmentController.updateAssignment);
 router.get('/assignments/:id', assignmentController.getAssignment);
 router.get('/assignments/students/:id', assignmentController.listAssignmentsByStudent);
+router.get('/assignments/students/elective/:id', assignmentController.listElectivesByStudent);
 router.get('/assignments/rotations/:id', assignmentController.listAssignmentsByRotation);
 router.get('/assignments/field-admin/:id', assignmentController.listAssignmentsByFieldAdmin);
-router.post('/assignments/switch', assignmentController.switchAssignments);
+router.get('/assignments/admin/:id', assignmentController.listAssignmentsByUMA);
+router.post('/assignments/switch', assignmentController.approveSwitchRequest);
 
 //Requests
 router.post('/requests', requestController.createRequest);
 router.get('/requests/switch', requestController.listSwitchRequests);
 router.get('/requests/elective', requestController.listElectiveRequests);
+router.get('/requests/:id', requestController.getRequest);
+router.put('/requests/:id', requestController.updateRequest);
+router.get('/requests/switch/student/:id', requestController.listSwitchRequestsByStudent);
+router.get('/requests/elective', requestController.listElectiveRequests);
+router.get('/requests/elective/student/:id', requestController.listElectiveRequestsByStudent);
 router.post('/requests/elective/approve', requestController.approveElectiveRequest);
 
 module.exports = router;

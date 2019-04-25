@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 
 var GroupSchema = new mongoose.Schema({
-  name: String,
+  name: { type : String, required : true, unique : true},
   description: String,
   students : [
     {

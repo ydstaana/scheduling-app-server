@@ -59,6 +59,10 @@ function createField(req, res) {
         }
       })
       break;
+    default:
+      res.status(422).json({
+        message: "Invalid rotation type"
+      });
   } 
 }
 

@@ -5,6 +5,7 @@ var MultipleRotation = Rotation.discriminator('Multiple',
   new mongoose.Schema({
     fieldGroup : {
       type: mongoose.Schema.Types.ObjectId,
+      required : true,
       ref: 'FieldGroup'
     },
   })

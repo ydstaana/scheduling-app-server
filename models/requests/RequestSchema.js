@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var RequestSchema = mongoose.Schema({
   student : {
     type: mongoose.Schema.Types.ObjectId,
+    required : true,
     ref: 'User'
   },
   dateCreated : { type: Date , default : new Date()},
@@ -13,7 +14,7 @@ var RequestSchema = mongoose.Schema({
   },
   isApproved: { type : Boolean, default : false},
   isPending: { type : Boolean, default : true},
-  message : String
+  message : { type : String, minlength : 20 }
 }, {
   discriminatorKey : "requestType"
 })

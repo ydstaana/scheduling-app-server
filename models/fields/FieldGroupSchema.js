@@ -1,10 +1,11 @@
 var mongoose = require('mongoose');
 
 var FieldGroupSchema = new mongoose.Schema({
-  name: String,
+  name: { type : String, required : true},
   fields : [
     {
       type: mongoose.Schema.Types.ObjectId,
+      required : true,
       ref: 'Field'
     }
   ],

@@ -4,7 +4,7 @@ function createSchedule(req, res) {
   Schedule.create(req.body, function (err, sched) {
     if (err) {
       res.status(422).json({
-        message: err
+        message: err.message
       });
     }
     else{
