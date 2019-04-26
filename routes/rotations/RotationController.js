@@ -159,9 +159,21 @@ function rotationLookup(req, res) {
   })
 }
 
+async function updateRotation(req, res) {
+  const doc = await Rotation.findById(req.params.id);
+  doc.set(req.body);
+  doc.save().then(() => {
+    res.status(200).send(doc);
+  })
+  .catch(err => {
+    res.status(422).json({code:'422', message: err});
+  });
+}
+
 module.exports = {
   createRotation : createRotation,
   listRotations : listRotations,
   rotationLookup : rotationLookup,
-  getRotation : getRotation
+  getRotation : getRotation,
+  updateRotation: updateRotation
 }

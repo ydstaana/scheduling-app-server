@@ -314,7 +314,8 @@ function listElectivesByStudent(req, res) {
 
 async function listAssignmentsByFieldAdmin(req ,res) {
   var field = await Field.findOne({
-    admin: req.params.id
+    admin: req.params.id,
+    isCustom: false
   })
 
   if(field == null) {

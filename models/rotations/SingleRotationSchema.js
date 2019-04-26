@@ -5,7 +5,7 @@ var SingleRotation = Rotation.discriminator('Single',
   new mongoose.Schema({
     field : {
       type: mongoose.Schema.Types.ObjectId,
-      rqeuired : true,
+      required : true,
       ref: 'Field'
     },
   })

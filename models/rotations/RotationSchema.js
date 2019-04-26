@@ -22,10 +22,11 @@ var RotationSchema = mongoose.Schema({
     required : true,
     ref: 'Group'
   },
-  isActive: Boolean
+  isActive: { type : Boolean, default : true}
 }, baseOptions)
 
 RotationSchema.pre('validate', async function(next) {
+  if(!this.isModified('field') && !this.isModified('schedule')) return next();
   switch(this.rotationType) {
     case RotationType.SINGLE:
       var rot = await Rotation.findOne({

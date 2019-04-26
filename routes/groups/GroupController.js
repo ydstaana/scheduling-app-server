@@ -1,4 +1,5 @@
 var Group = require('../../models/groups/GroupSchema.js');
+var User = require('../../models/users/UserSchema.js');
 var Student = require('../../models/users/StudentSchema.js');
 var Field = require('../../models/fields/FieldSchema.js');
 var FieldGroup = require('../../models/fields/FieldGroupSchema.js');
@@ -109,7 +110,7 @@ async function createAssignments(group, student) {
               rotation.save().then(newRotation => {
                 console.log(`Rotation now has ${newRotation.studentCount} students`);
                 resolve();
-              })
+              });
               
             }
           })
@@ -130,7 +131,10 @@ async function createAssignments(group, student) {
               //Add created assignment to student
               student.assignments.push(assign);
               if(fieldCtr == fieldGroup.fields.length) {
-                resolve();
+                rotation.save().then(newRotation => {
+                  console.log(`Rotation now has ${newRotation.studentCount} students`);
+                  resolve();
+                });
               }
             })
             .catch(err => {
@@ -143,15 +147,47 @@ async function createAssignments(group, student) {
   }) 
 }
 
+async function removeAssignmentsFromStudent(studentId, groupId) {
+  return new Promise(async function(resolve, reject) {
+    var assignments = await Assignment.find({
+      group : groupId,
+      student : studentId
+    })
+
+    var student = await User.findById(studentId);
+  
+    assignments.forEach(assign => {
+      assign.isActive = false;
+      student.assignments.pull(assign.id)
+      assign.save().then(() => {
+        student.save().then(() => {
+          resolve();
+        })
+        .catch(() => {
+          reject();
+        })
+      })
+      .catch(() => {
+        reject();
+      })
+    })
+  })
+}
+
 async function removeStudentFromGroup(studentId, groupId) {
   return new Promise(async function(resolve, reject) {
     await Group.findById(groupId).then(result => {
       var group = result;
-      group.students = group.students.filter(stud => stud != studentId);
-      console.log(group.students);
+      group.students.pull(studentId);
       group.save().then(result => {
-        console.log("Removed student from group");
-        resolve(result);
+        removeAssignmentsFromStudent(studentId, group.id)
+        .then(() => {
+          console.log("Removed student from group");
+          resolve(result);
+        })
+        .catch(err => {
+          resolve(err);
+        })
       })
       .catch(err => {
         reject(err);
