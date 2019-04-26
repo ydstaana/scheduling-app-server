@@ -99,6 +99,11 @@ async function createAssignments(group, student) {
     var counter = 0;
     group.rotations.forEach(async rot => {
       var rotation = await Rotation.findById(rot);
+      
+      if(rotation.isActive == false) {
+        resolve();
+      }
+
       rotation.studentCount += 1;
 
       switch(rotation.rotationType) {
