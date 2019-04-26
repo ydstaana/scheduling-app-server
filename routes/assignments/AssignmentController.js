@@ -209,8 +209,10 @@ async function approveSwitchRequest(req, res) {
     var tempAssign = await Assignment.findById(oldAssign);
     var tempRot = await Rotation.findById(tempAssign.rotation);
 
-    tempRot.studentCount--;
-    tempRot.save();
+    if(tempRot.isActive != false) {
+      tempRot.studentCount--;
+      tempRot.save();
+    }
 
     if(tempAssign == null) {
       return res.status(422).json({
@@ -314,8 +316,7 @@ function listElectivesByStudent(req, res) {
 
 async function listAssignmentsByFieldAdmin(req ,res) {
   var field = await Field.findOne({
-    admin: req.params.id,
-    isCustom: false
+    admin: req.params.id
   })
 
   if(field == null) {
@@ -325,7 +326,8 @@ async function listAssignmentsByFieldAdmin(req ,res) {
   }
 
   Assignment.find({
-    field : field._id
+    field : field._id,
+    isCustom: false
   })
   .populate('student')
   .populate({
