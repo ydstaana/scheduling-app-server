@@ -12,7 +12,7 @@ var RequestTypes = {
   ELECTIVE: "ElectiveRequest"
 }
 
-function createResetRequest(req, res) {
+await function createResetRequest(req, res) {
   var user = await User.findOne({
     email : req.body.email
   })
