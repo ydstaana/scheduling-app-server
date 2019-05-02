@@ -109,6 +109,24 @@ function getUser(req, res) {
   })
 }
 
+async function changePassword(req,res) {
+  var user = await User.findById(req.params.id)
+
+  User.authenticate(req.body.email, req.body.oldPassword, function (err, user) {
+    if (err) {
+      res.status(403).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    user.password = req.body.newPassword;
+    user.save()
+    .then(() => {
+      res.status(200).send(user);
+    })
+  })
+}
 async function resetPassword(req, res) {
   var user = await User.findOne({
     email : req.body.email
@@ -451,6 +469,7 @@ module.exports = {
   listMedAdmins : listMedAdmins,
   listFieldAdmins : listFieldAdmins,
   listStudents : listStudents,
+  changePassword : changePassword,
   listUnassignedStudents : listUnassignedStudents,
   updateUser : updateUser,
   updateUserProfile: updateUserProfile,

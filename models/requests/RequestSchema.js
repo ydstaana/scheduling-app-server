@@ -12,6 +12,7 @@ var RequestSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  dateModified : Date,
   isApproved: { type : Boolean, default : false},
   isPending: { type : Boolean, default : true},
   message : { type : String, minlength : 20 }

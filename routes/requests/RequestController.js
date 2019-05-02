@@ -1,12 +1,105 @@
 var Request = require('../../models/requests/RequestSchema')
+var User = require('../../models/users/UserSchema')
 var RequestAssignment = require('../../models/requests/RequestAssignmentSchema')
 var SwitchRequest = require('../../models/requests/SwitchRequestSchema')
 var Assignment = require('../../models/assignments/AssignmentSchema.js')
 var ElectiveRequest = require('../../models/requests/ElectiveRequestSchema')
+var ResetRequest = require('../../models/requests/ResetRequestSchema')
+var User = require('../../models/users/UserSchema')
 
 var RequestTypes = {
   SWITCH : "SwitchRequest",
   ELECTIVE: "ElectiveRequest"
+}
+
+function createResetRequest(req, res) {
+  var user = await User.findOne({
+    email : req.body.email
+  })
+
+  if(user == null) {
+    return res.status(422).json({
+      message: "Email is not associated to any account"
+    });
+  }
+  else {
+    ResetRequest.create(req.body, (err, request) => {
+      if(err) {
+        res.status(422).json({
+          message: err
+        });
+      }
+      else {
+        res.status(200).send(request);
+      }
+    })
+  }
+  
+}
+function listResetRequests(req, res) {
+  ResetRequest.find({}, (err, requests) => {
+    if(err) {
+      res.status(422).json({
+        message: err
+      });
+    }
+    else {
+      res.status(200).send(requests);
+    }
+  })
+}
+
+async function approveResetRequest(req, res) {
+  ResetRequest.findById(req.params.id,async (err, request) => {
+    if(err) {
+      return res.status(422).json({
+        message: err
+      });
+    }
+    else {
+      var user = await User.findOne({
+        email : request.email
+      })
+
+      if(req.body.approve) {
+        user.password = "user123"
+        user.save()
+        .then((result) => {
+          request.isApproved = true;
+          request.dateModified = new Date();
+          request.save().then(() => {
+            res.status(200).json({
+              message : "Successfully reset password"
+            });
+          })
+          .catch(err => {
+            return res.status(422).json({
+              message: err
+            });
+          })
+       })
+       .catch(err => {
+          return res.status(422).json({
+            message: err
+          });
+       })
+      }
+      else {
+        request.isApproved = false;
+        request.dateModified = new Date();
+          request.save().then(() => {
+            res.status(200).json({
+              message : "Request disapproved"
+            });
+          })
+          .catch(err => {
+            return res.status(422).json({
+              message: err
+            });
+          })
+      }
+    }
+  }) 
 }
 
 function createRequest(req, res) {
@@ -209,6 +302,7 @@ async function approveElectiveRequest(req, res) {
 
   request.isApproved = true;
   request.isPending = false;
+  request.dateModified = new Date();
   request.remarks = req.body.remarks;
 
   assignment.isCustom = true;
@@ -229,6 +323,9 @@ async function approveElectiveRequest(req, res) {
 
 module.exports = {
   createRequest : createRequest,
+  createResetRequest : createResetRequest,
+  listResetRequests : listResetRequests,
+  approveResetRequest : approveResetRequest,
   getRequest : getRequest,
   listSwitchRequests : listSwitchRequests,
   listSwitchRequestsByStudent: listSwitchRequestsByStudent,

@@ -10,13 +10,14 @@ const baseOptions = {
 
 var UserSchema = new mongoose.Schema({
   firstName: { type: String, required : true},
-  middleName: { type: String, required : true},
+  middleName: { type: String, required : false},
   lastName: { type: String, required : true},
   address: String,
   mobileNumber: String,
   isActive:  Boolean,
   contactPersonName: String,
   contactPersonNumber: String,
+  contactPersonRelationship: String,
   email: { type: String, required : true, unique: true},
   password: String,
   status: String,
